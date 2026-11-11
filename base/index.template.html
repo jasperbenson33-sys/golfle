@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Dewsweeper 3D Golf</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&family=Cormorant+Garamond:ital,wght@0,500;1,500;1,600&display=swap" rel="stylesheet">
+<style>
+/*__CSS__*/
+</style>
+</head>
+<body>
+<main id="stage">
+  <canvas id="gl" aria-label="Golf course seen from behind the ball. Pull back anywhere and let go to swing."></canvas>
+  <canvas id="fx" aria-hidden="true"></canvas>
+  <div id="pin-tag" class="tag pin" hidden></div>
+  <div id="aim-tag" class="tag" hidden></div>
+
+  <header id="hud" class="hud" hidden>
+    <div class="pill hud-hole">
+      <span class="lbl" id="hud-hole">Hole 1 of 3</span>
+      <span class="val" id="hud-par">Par 4</span>
+    </div>
+    <div class="pill hud-card" aria-label="Scorecard so far">
+      <span class="sc" id="sc0"></span><span class="sc" id="sc1"></span><span class="sc" id="sc2"></span>
+      <span class="topar" id="hud-topar">E</span>
+    </div>
+    <div class="pill hud-wind">
+      <svg id="wind-arrow" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.5l5.5 8.5H14V21h-4V11H6.5z" fill="currentColor"/></svg>
+      <span class="val" id="wind-txt">Calm</span>
+    </div>
+  </header>
+  <div id="map" class="map" hidden><canvas id="mapc" aria-label="Overhead map of the hole"></canvas></div>
+
+  <div id="banner" class="banner" aria-live="polite">
+    <div class="b-hole" id="b-hole"></div>
+    <div class="b-sub" id="b-sub"></div>
+  </div>
+  <div id="moment" class="moment" aria-live="polite">
+    <div class="m-name" id="m-name"></div>
+    <div class="m-sub" id="m-sub"></div>
+  </div>
+
+  <div id="hint3"><div id="hint" class="hint" role="status"></div></div>
+  <div id="foot" class="foot" hidden>
+    <div class="foot-row">
+      <div class="pill lie" id="lie"></div>
+      <button class="icon-btn" id="snd" type="button" aria-label="Sound" aria-pressed="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 9.5v5h3.5L12 19V5L7.5 9.5z" fill="currentColor"/><path id="snd-wave" d="M15 8.5a5 5 0 010 7M17.5 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path id="snd-off" d="M15.5 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="display:none"/></svg>
+      </button>
+    </div>
+    <div class="clubs" id="clubs" role="group" aria-label="Clubs">
+      <button class="club" type="button" id="club-driver" data-club="driver" aria-pressed="false">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M22 3L10.5 19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M11.5 17.5c2.2 1.2 3.2 3.4 2.2 5.4-1 2.1-4.6 2.6-7.4 1.2-2.6-1.3-3.6-3.6-2.4-5.3 1.3-1.9 5-2.7 7.6-1.3z" fill="currentColor"/></svg>
+        <span class="c-name">Driver</span><span class="c-yd" id="yd-driver">225</span>
+      </button>
+      <button class="club" type="button" id="club-iron" data-club="iron" aria-pressed="false">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M21 3L11 19.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M11.6 18.2l1.5 5.2c.2.8-.3 1.5-1.1 1.6l-6.4.6c-.9.1-1.4-.9-.8-1.6z" fill="currentColor"/></svg>
+        <span class="c-name">Iron</span><span class="c-yd" id="yd-iron">165</span>
+      </button>
+      <button class="club" type="button" id="club-wedge" data-club="wedge" aria-pressed="false">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M20 3l-8 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12.6 17.6l2.6 5.6c.4.9-.2 1.8-1.1 1.9l-9 .5c-1 .1-1.5-1.1-.8-1.8z" fill="currentColor"/></svg>
+        <span class="c-name">Wedge</span><span class="c-yd" id="yd-wedge">95</span>
+      </button>
+      <button class="club" type="button" id="club-putter" data-club="putter" aria-pressed="false">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M17 3v18.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="6" y="20.5" width="13" height="4.5" rx="1.4" fill="currentColor"/></svg>
+        <span class="c-name">Putter</span><span class="c-yd" id="yd-putter">Green</span>
+      </button>
+    </div>
+  </div>
+
+  <section id="title" class="overlay title">
+    <div class="title-top">
+      <p class="eyebrow" id="t-date"></p>
+      <h1>Dewsweeper</h1>
+      <p class="t-tag">Three holes at first light. One course a day, the same for everyone.</p>
+    </div>
+    <div class="title-bot">
+      <p class="t-how">Pull back anywhere and let go to swing. Fewest strokes wins the morning.</p>
+      <button id="play" class="btn primary" type="button">Tee off</button>
+      <p class="t-meta" id="t-meta"></p>
+    </div>
+  </section>
+
+  <section id="summary" class="overlay summary" hidden>
+    <div class="card">
+      <p class="eyebrow" id="s-eyebrow"></p>
+      <h2 id="s-title"></h2>
+      <p class="s-sub" id="s-sub"></p>
+      <table class="scorecard" id="s-table"></table>
+      <div class="trails" id="s-trails"></div>
+      <p class="legend" aria-hidden="true">
+        <span><i class="tile F"></i>Fairway</span><span><i class="tile R"></i>Rough</span><span><i class="tile S"></i>Sand</span><span><i class="tile W"></i>Water</span><span><i class="tile T"></i>Trees</span><span><i class="tile G"></i>Green</span><span><i class="tile H"></i>Cup</span>
+      </p>
+      <div class="s-actions">
+        <button id="share" class="btn primary" type="button">Copy scorecard</button>
+        <button id="practice" class="btn" type="button">Practice round</button>
+      </div>
+      <textarea id="share-text" rows="4" readonly hidden aria-label="Scorecard text"></textarea>
+      <p class="s-foot"><span id="s-next"></span><span id="s-streak"></span></p>
+      <button id="replay" class="link" type="button">Replay this course</button>
+    </div>
+  </section>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/*__CORE__*/
+</script>
+<script>
+/*__UI__*/
+</script>
+</body>
+</html>

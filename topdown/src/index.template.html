@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Dewsweeper Daily Golf</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&family=Cormorant+Garamond:ital,wght@0,500;1,500;1,600&display=swap" rel="stylesheet">
+<style>
+/*__CSS__*/
+</style>
+</head>
+<body>
+<main id="stage">
+  <canvas id="view" aria-label="Golf hole seen from above. Pull back anywhere and let go to swing."></canvas>
+
+  <header id="hud" class="hud" hidden>
+    <div class="pill hud-hole">
+      <span class="lbl" id="hud-hole">Hole 1 of 3</span>
+      <span class="val" id="hud-par">Par 4</span>
+    </div>
+    <div class="pill hud-card" aria-label="Scorecard so far">
+      <span class="sc" id="sc0"></span><span class="sc" id="sc1"></span><span class="sc" id="sc2"></span>
+      <span class="topar" id="hud-topar">E</span>
+    </div>
+    <div class="pill hud-wind">
+      <svg id="wind-arrow" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.5l5.5 8.5H14V21h-4V11H6.5z" fill="currentColor"/></svg>
+      <span class="val" id="wind-txt">Calm</span>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" aria-live="polite">
+    <div class="b-hole" id="b-hole"></div>
+    <div class="b-sub" id="b-sub"></div>
+  </div>
+
+  <div id="moment" class="moment" aria-live="polite">
+    <div class="m-name" id="m-name"></div>
+    <div class="m-sub" id="m-sub"></div>
+  </div>
+
+  <div id="foot" class="foot" hidden>
+    <div id="hint" class="hint" role="status"></div>
+    <div class="foot-row">
+      <div class="pill lie" id="lie"></div>
+      <button class="icon-btn" id="snd" type="button" aria-label="Sound" aria-pressed="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 9.5v5h3.5L12 19V5L7.5 9.5z" fill="currentColor"/><path id="snd-wave" d="M15 8.5a5 5 0 010 7M17.5 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path id="snd-off" d="M15.5 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="display:none"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <section id="title" class="overlay title">
+    <div class="title-top">
+      <p class="eyebrow" id="t-date"></p>
+      <h1>Dewsweeper</h1>
+      <p class="t-tag">Three holes at first light. One course a day, the same for everyone.</p>
+    </div>
+    <div class="title-bot">
+      <p class="t-how">Pull back anywhere on the course and let go to swing. Fewest strokes wins the morning.</p>
+      <button id="play" class="btn primary" type="button">Tee off</button>
+      <p class="t-meta" id="t-meta"></p>
+    </div>
+  </section>
+
+  <section id="summary" class="overlay summary" hidden>
+    <div class="card">
+      <p class="eyebrow" id="s-eyebrow"></p>
+      <h2 id="s-title"></h2>
+      <p class="s-sub" id="s-sub"></p>
+      <table class="scorecard" id="s-table"></table>
+      <div class="trails" id="s-trails"></div>
+      <p class="legend" aria-hidden="true">
+        <span><i class="tile F"></i>Fairway</span><span><i class="tile R"></i>Rough</span><span><i class="tile S"></i>Sand</span><span><i class="tile W"></i>Water</span><span><i class="tile T"></i>Trees</span><span><i class="tile G"></i>Green</span><span><i class="tile H"></i>Cup</span>
+      </p>
+      <div class="s-actions">
+        <button id="share" class="btn primary" type="button">Copy scorecard</button>
+        <button id="practice" class="btn" type="button">Practice round</button>
+      </div>
+      <textarea id="share-text" rows="4" readonly hidden aria-label="Scorecard text"></textarea>
+      <p class="s-foot"><span id="s-next"></span><span id="s-streak"></span></p>
+      <button id="replay" class="link" type="button">Replay this course</button>
+    </div>
+  </section>
+</main>
+<script>
+/*__CORE__*/
+</script>
+<script>
+/*__UI__*/
+</script>
+</body>
+</html>
