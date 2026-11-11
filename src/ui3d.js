@@ -661,6 +661,7 @@
     if (show === false) { el.classList.remove('show'); return; }
     const h = G.hole;
     $('b-hole').textContent = 'Hole ' + (G.hi + 1);
+    $('b-name').textContent = h.name || '';
     $('b-sub').textContent = 'Par ' + h.par + ' · ' + h.yards + ' yards' + (h.wind.mph ? ' · wind ' + h.wind.mph + ' mph' : ' · calm');
     el.classList.add('show');
     bannerTimer = setTimeout(function () { el.classList.remove('show'); }, 2600);
@@ -1078,6 +1079,7 @@
     teleport(x, y) { G.ball = { x, y, z: 0 }; G.free = null; prepShot(); addressPose(G.base, 0); snapCam(); },
     freeCam(px, py, pz, lx, ly, lz) { G.free = { pos: new THREE.Vector3(px, pz, -py), look: new THREE.Vector3(lx, lz, -ly) }; },
     releaseCam() { G.free = null; },
+    showBanner() { clearTimeout(bannerTimer); banner(); clearTimeout(bannerTimer); },
     hud(on) { for (const id of ['hud', 'foot', 'map', 'hint3', 'banner', 'pin-tag', 'aim-tag']) { const el = $(id); if (el) el.style.visibility = on ? '' : 'hidden'; } },
     info() { const r = renderer.info; return { calls: r.render.calls, triangles: r.render.triangles, points: r.render.points, geometries: r.memory.geometries, textures: r.memory.textures }; } };
   const hot = window.claude && window.claude.hot;

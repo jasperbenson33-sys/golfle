@@ -1,4 +1,4 @@
-const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+const { chromium } = (function () { try { return require('/opt/npm-tools/node_modules/playwright'); } catch (e) { return require('playwright'); } })();
 const fs = require('fs'), path = require('path');
 (async () => {
   const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });

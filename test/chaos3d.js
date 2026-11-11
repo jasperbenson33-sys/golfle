@@ -1,5 +1,5 @@
 /* Wild shots in the 3D version: trees, water, sand, pickups, resume, summary, practice, copy, hot-restore, touch. */
-const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+const { chromium } = (function () { try { return require('/opt/npm-tools/node_modules/playwright'); } catch (e) { return require('playwright'); } })();
 const path = require('path');
 const out = path.join(__dirname, '..', 'shots');
 const url = 'file://' + path.join(__dirname, '..', 'dist', 'index.html') + '?date=2026-11-14';

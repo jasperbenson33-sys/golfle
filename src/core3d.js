@@ -296,12 +296,13 @@
         const a1 = rng.range(-0.18, 0.18), d1 = rng.range(236, 258);
         const Z1 = adv(tee, a1, d1);
         const s = rng.sign();
-        const a2 = clamp(a1 + s * rng.range(0.2, 0.65), -0.9, 0.9), d2 = rng.range(150, 176);
+        const a2 = clamp(a1 + s * rng.range(0.2, 0.65), -0.9, 0.9), d2 = rng.range(162, 176);
         const Z2 = adv(Z1, a2, d2);
         const s2 = rng.chance(0.6) ? -s : s;
         const a3 = clamp(a2 + s2 * rng.range(0.2, 0.7), -1.0, 1.0);
-        const d3 = rng.range(Math.max(has('layup') ? 84 : 62, 452 - d1 - d2), Math.min(92, 522 - d1 - d2));
+        const d3 = rng.range(Math.max(has('layup') ? 84 : 74, 466 - d1 - d2), Math.min(92, 522 - d1 - d2));
         P = [tee, Z1, Z2, adv(Z2, a3, d3)]; Lg = [{ a: a1, len: d1 }, { a: a2, len: d2 }, { a: a3, len: d3 }];
+        if (!force && dist(adv(tee, a1, d1 + 45), P[3]) < 212) continue; // a drive that runs on past the corner must still leave more than an iron
       }
       if (force || P.every((p) => Math.abs(p.x) <= 114)) { path = P; legs = Lg; }
     }
@@ -606,7 +607,7 @@
     }
     return true;
   }
-  function validate(h) { return layoutOK(h) && landOK(h) && treesOK(h) && regulationOK(h); }
+  function validate(h) { return layoutOK(h) && landOK(h) && treesOK(h) && regulationOK(h) && threeShotOK(h); }
 
   /* Yards still to play from p: across to the centreline, then along it to the cup. */
   function pathRem(h, p) {
@@ -667,6 +668,23 @@
     return false;
   }
 
+  /* A par 5 is a three-shot hole: a full drive that stays on the short grass should not leave a full iron that runs onto
+     the green, in the hole's own wind. A handful of drives are tried, not every one, so a rare perfect drive can still
+     set up a long eagle chance. */
+  function threeShotOK(h) {
+    if (h.par !== 5) return true;
+    const ap = aimPoint(h, h.tee, CLUBS.driver.max * 1.12 + 4), a0 = Math.atan2(ap.x - h.tee.x, ap.y - h.tee.y);
+    for (let i = 0; i < 11; i++) {
+      const r = runShot(h, h.tee, 'driver', a0 + (i - 5) * 0.06, 1, true);
+      if (r.kind !== 'rest' || r.tree || (r.lie !== T.FAIRWAY && r.lie !== T.FRINGE)) continue;
+      const edge = sdCircles(h.green, r.x, r.y);
+      if (edge > 235) continue; // beyond any iron, whatever the wind and slope
+      const q = runShot(h, r, 'iron', Math.atan2(h.pin.x - r.x, h.pin.y - r.y), 1, true);
+      if (q.kind === 'holed' || dist(q, r) + 2 >= edge) return false;
+    }
+    return true;
+  }
+
   const LAYOUTS = [[3, 4, 5], [4, 3, 5], [4, 5, 3], [3, 5, 4]];
   /* What a date brings: its day number, the four-day block it sits in, and the morning's prevailing wind. */
   function dayEnv(key) {
@@ -684,7 +702,8 @@
       for (let attempt = 0; attempt < 30 && !h; attempt++) {
         n++;
         const c = buildHole(makeRng(hashStr(key + '|' + idx + '|' + round + '|' + attempt)), par, diff, env, plan, false);
-        if (c && regulationOK(c)) h = c; else if (c) GEN.fail.regulation = (GEN.fail.regulation || 0) + 1;
+        if (c && attempt < 20 && !threeShotOK(c)) GEN.fail.twoShot = (GEN.fail.twoShot || 0) + 1;
+        else if (c && regulationOK(c)) h = c; else if (c) GEN.fail.regulation = (GEN.fail.regulation || 0) + 1;
       }
     }
     if (!h) { // never seen in testing: an unchecked hole is better than no hole
@@ -826,7 +845,9 @@
     const d = Math.hypot(h.pin.x - nx, h.pin.y - ny);
     if (d < PHYS.CUP_R && s.h < 0.1) {
       const nsp = Math.hypot(nvx, nvy);
-      if (nsp < PHYS.CUP_V || (d < PHYS.CUP_R * 0.5 && nsp < PHYS.CUP_V * 1.5)) {
+      /* a pitch or full shot has to find the middle of the cup, slowly; a putt gets the whole cup */
+      const full = s.club !== 'putter';
+      if (full ? d < PHYS.CUP_R * 0.4 && nsp < PHYS.CUP_V * 0.7 : nsp < PHYS.CUP_V || (d < PHYS.CUP_R * 0.5 && nsp < PHYS.CUP_V * 1.5)) {
         s.x = h.pin.x; s.y = h.pin.y; s.events.push('holed'); finish(h, s, 'holed'); return;
       }
       if (!s.lipped) {

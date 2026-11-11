@@ -26,7 +26,7 @@
 
    Notes: software rendering is slow (roughly 5-12 fps), so game time runs slower than wall time. Captures are keyed
    to game time, not wall time. The cdnjs three.js URL is served from vendor/three.min.js; Google Fonts are blocked. */
-const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+const { chromium } = (function () { try { return require('/opt/npm-tools/node_modules/playwright'); } catch (e) { return require('playwright'); } })();
 const path = require('path'), fs = require('fs');
 const root = path.join(__dirname, '..');
 const argv = process.argv.slice(2), opt = {};

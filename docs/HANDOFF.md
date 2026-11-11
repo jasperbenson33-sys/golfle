@@ -10,7 +10,13 @@ Two versions exist:
 - repo root — the 3D game. All current work is here.
 
 Published pages (Claude artifacts, owner-only): "Dewsweeper Daily Golf" (top-down) and "Dewsweeper 3D Golf".
-The live 3D page is the version *before* everything listed under "In progress": calmer aiming, longer roll, nothing else.
+The live 3D page now has the course redesign (step 1, done 11 Nov) with no effect modules.
+
+## Status: paused 11 Nov 2026
+The owner is pivoting to a new game, "City Golf" (mini golf with full swings, in a city park, then the sidewalk, and so on), in a new project.
+Dewsweeper is parked here as it stands. Known glitch from his play test: under a tree the shot preview shows "Trees" (blocked) straight away,
+because the ball collides with a cylinder of the full canopy radius from the ground up, while the new tree models show only a thin trunk there.
+Fix if this is picked up again: collide with the trunk below the lowest foliage and with the canopy above it (core `treeAt` users and `previewShot`).
 
 ## The owner's standing rules
 1. Round length (three holes) is right. Pull-back-and-release is right; aiming must be calm, not twitchy (done: power = vertical pull only, aim = sideways travel on a gentle curve, both smoothed, lift-off twitch ignored).
@@ -20,6 +26,7 @@ The live 3D page is the version *before* everything listed under "In progress": 
 5. **Never a hole where the driver is used at full capacity more than once.** Decision: driver is tee-only.
 6. **Harder holes come from obstacles and hilliness, never from sheer length.**
 7. Name and wind are fine for now.
+9. Par 5s stay about 490-525 yd so they always take three shots (decided 11 Nov). Do not shorten them without asking.
 8. Goal now: "absolutely gorgeous and seamless", effects like lens flare, water ripples, swaying grass and trees, wind carrying fall leaves. He asked for a team of agents.
 
 ## Layout
@@ -37,13 +44,27 @@ docs/archive/        an abandoned full-modularisation plan; ignore
 vendor/three.min.js  r128, for tests (page loads it from cdnjs)
 ```
 
-## In progress when work stopped (usage limit hit twice; nothing below is tested)
-- **Course redesign** in `src/core3d.js` (uncommitted diff vs the first commit is large): plan-based holes (`choosePlan`, names like "Lakeside", "Peninsula green"), tee-only driver, three-shot par 5s of about 450-525 yd, `ter.tilt` and `ter.bumps`, `regulationOK`, `pathRem`. It loads and generates. NOT done: bot run (`test/bot3d.js` still assumes driver off the fairway), tuning, `tools/maps.js` contact sheet, host edits (driver button "Tee only", hint text, hole name in banner), build + view check. The full task spec is in "Architect task" below.
-- **fx/sky.js, ground.js, trees.js, water.js, audio.js**: each agent wrote a first version and was cut off before building or looking at it. They pass `node --check` only. Each needs: build on base (`python3 tools/build.py --from base --fx NAME --out dist/dev-NAME.html`), screenshots, iteration, budget check.
+## Step 1 result (course redesign, done 11 Nov)
+`node test/bot3d.js 30`: 0 invalid, 0 stuck, full-power drivers per hole max 1, rounds generate in ~20-60 ms (worst seen ~170 ms).
+Expert par-5 eagles 0% over 30 days, 11% over 90; regular about -1 per round, newbie about +1.4.
+What it took, beyond the architect's draft:
+- `threeShotOK` (core): a par 5 is rejected if a full drive that finds fairway leaves a full iron (in the hole's wind) that reaches the green.
+  Plus a geometric guard in the par-5 path: from 45 yd past the first corner, the green must be at least 212 yd away.
+  Side effect: par 5s now land at about 490-525 yd (inside the spec band, toward its top). Long drives run ~290-300 yd with the raised rollout.
+- Full shots (not putts) need the middle of the cup and a slow ball to drop; wedges were holing out from 60 yd far too often.
+- Bots: they now check their best few swings with the real ball to avoid water and trees (green reading stays approximate),
+  leave margin after a ball in the water, and count re-tees separately from full-power drives. `test/bot3d.js` exports its players.
+- Host: hole name under "Hole N" in the banner. "Tee only" and the rough hint were already done. `window.__dew.showBanner()` for screenshots.
+- Tools now fall back to `require('playwright')` when `/opt/npm-tools` is missing.
+
+## Modules
+- **Finished (11 Nov), live:** `trees` and `ground`, built against `src`. Publish with `python3 tools/build.py --fx trees,ground` (not `all`, which pulls in the drafts).
+  Trees: +5 draw calls, +36k triangles, no page errors. Ground: fairway grain was combed 6x and read as motion blur at the tee; now 2.2x and fairway/rough grain amplitudes lowered (0.11 / 0.24).
+- **Still first drafts:** sky, water, audio. Each agent wrote a first version and was cut off before building or looking at it. They pass `node --check` only. Each needs: build on base (`python3 tools/build.py --from base --fx NAME --out dist/dev-NAME.html`), screenshots, iteration, budget check.
 
 ## Next steps, in order (publish after each)
-1. Finish and verify the course redesign; build with `--fx none`; publish. This is what the owner asked for most directly.
-2. Bring modules to finished one or two at a time: trees and ground first (largest visual gain), then sky, water, audio. After each, build `src` + finished modules, look at address / flight / green / title, publish.
+1. ~~Finish and verify the course redesign; build with `--fx none`; publish.~~ Done 11 Nov (see above).
+2. Bring modules to finished one or two at a time: ~~trees and ground first~~ (done 11 Nov) (largest visual gain), then sky, water, audio. After each, build `src` + finished modules, look at address / flight / green / title, publish.
 3. Second wave, not started: `fx/grass.js` (swaying grass near the camera, never hiding the ball), `fx/life.js` (drifting leaves with the wind, motes, birds; replaces the host's 2D birds on score moments), `fx/strike.js` (`replaces: ['club','trail','particles']`: better club models, ball trail ribbon, impact effects).
 4. Host polish in `src/ui3d.js`: camera choreography (intro, flight, landing, putt, score moment), aim visuals, HUD and onboarding, a quality toggle. One editor at a time on this file.
 5. Then refresh `base/` from `src/` so later module work sees the new course generator.
