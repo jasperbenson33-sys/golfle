@@ -51,12 +51,14 @@ What it took, beyond the architect's draft:
 - Host: hole name under "Hole N" in the banner. "Tee only" and the rough hint were already done. `window.__dew.showBanner()` for screenshots.
 - Tools now fall back to `require('playwright')` when `/opt/npm-tools` is missing.
 
-## Modules (still first drafts)
-- **fx/sky.js, ground.js, trees.js, water.js, audio.js**: each agent wrote a first version and was cut off before building or looking at it. They pass `node --check` only. Each needs: build on base (`python3 tools/build.py --from base --fx NAME --out dist/dev-NAME.html`), screenshots, iteration, budget check.
+## Modules
+- **Finished (11 Nov), live:** `trees` and `ground`, built against `src`. Publish with `python3 tools/build.py --fx trees,ground` (not `all`, which pulls in the drafts).
+  Trees: +5 draw calls, +36k triangles, no page errors. Ground: fairway grain was combed 6x and read as motion blur at the tee; now 2.2x and fairway/rough grain amplitudes lowered (0.11 / 0.24).
+- **Still first drafts:** sky, water, audio. Each agent wrote a first version and was cut off before building or looking at it. They pass `node --check` only. Each needs: build on base (`python3 tools/build.py --from base --fx NAME --out dist/dev-NAME.html`), screenshots, iteration, budget check.
 
 ## Next steps, in order (publish after each)
 1. ~~Finish and verify the course redesign; build with `--fx none`; publish.~~ Done 11 Nov (see above).
-2. Bring modules to finished one or two at a time: trees and ground first (largest visual gain), then sky, water, audio. After each, build `src` + finished modules, look at address / flight / green / title, publish.
+2. Bring modules to finished one or two at a time: ~~trees and ground first~~ (done 11 Nov) (largest visual gain), then sky, water, audio. After each, build `src` + finished modules, look at address / flight / green / title, publish.
 3. Second wave, not started: `fx/grass.js` (swaying grass near the camera, never hiding the ball), `fx/life.js` (drifting leaves with the wind, motes, birds; replaces the host's 2D birds on score moments), `fx/strike.js` (`replaces: ['club','trail','particles']`: better club models, ball trail ribbon, impact effects).
 4. Host polish in `src/ui3d.js`: camera choreography (intro, flight, landing, putt, score moment), aim visuals, HUD and onboarding, a quality toggle. One editor at a time on this file.
 5. Then refresh `base/` from `src/` so later module work sees the new course generator.

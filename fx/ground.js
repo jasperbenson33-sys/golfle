@@ -23,8 +23,8 @@
 
   /* ---------------- tunables ---------------- */
   var T = {
-    grainRough: 0.32,     // albedo amplitude of the rough's clumpy grain near the camera
-    grainFairway: 0.20,  // fairway combed grain
+    grainRough: 0.24,     // albedo amplitude of the rough's clumpy grain near the camera
+    grainFairway: 0.11,  // fairway combed grain
     grainGreen: 0.12,    // green velvet
     grainSand: 0.10,      // sand granules + ripples
     mottle: 0.07,         // soft tonal mottling (all surfaces, fades by ~250 yd)
@@ -253,7 +253,7 @@
     'float foot = dist * uPix / nv;',                          // yards per pixel along the ground
     'float wG = msk.r, wF = msk.g, wS = msk.b, wR = clamp( 1.0 - wG - wF - wS, 0.0, 1.0 );',
     'vec2 fp = gp / uK.y;',
-    'vec2 fpF = vec2( gp.x / uK.y, gp.y / ( uK.y * 6.0 ) );',  // fairway grain combed along the stripes (north-south)
+    'vec2 fpF = vec2( gp.x / uK.y, gp.y / ( uK.y * 2.2 ) );',  // fairway grain combed along the stripes (north-south)
     'vec4 n1 = texture2D( uNoise, wF > 0.5 ? fpF : fp );',
     'vec4 n2 = texture2D( uNoise, fp * 0.37 + vec2( 0.31, 0.77 ) );',
     'vec4 nm = texture2D( uNoise, gp / uK.z );',
