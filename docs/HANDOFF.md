@@ -12,6 +12,12 @@ Two versions exist:
 Published pages (Claude artifacts, owner-only): "Dewsweeper Daily Golf" (top-down) and "Dewsweeper 3D Golf".
 The live 3D page now has the course redesign (step 1, done 11 Nov) with no effect modules.
 
+## Status: paused 11 Nov 2026
+The owner is pivoting to a new game, "City Golf" (mini golf with full swings, in a city park, then the sidewalk, and so on), in a new project.
+Dewsweeper is parked here as it stands. Known glitch from his play test: under a tree the shot preview shows "Trees" (blocked) straight away,
+because the ball collides with a cylinder of the full canopy radius from the ground up, while the new tree models show only a thin trunk there.
+Fix if this is picked up again: collide with the trunk below the lowest foliage and with the canopy above it (core `treeAt` users and `previewShot`).
+
 ## The owner's standing rules
 1. Round length (three holes) is right. Pull-back-and-release is right; aiming must be calm, not twitchy (done: power = vertical pull only, aim = sideways travel on a gentle curve, both smoothed, lift-off twitch ignored).
 2. On-course 3D view, not from above. See the ball's arc, see the club, four clubs to pick (driver, iron, wedge, putter; the game suggests one), sky and scenery, camera follows the ball.
