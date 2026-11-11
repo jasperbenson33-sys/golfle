@@ -33,11 +33,12 @@ function flyFast(h, ball, club, angle, power, max, windScale) {
   }
   return null;
 }
-function planSwing(h, ball, opt, windScale) {
+function planSwing(h, ball, opt, windScale, wet) {
   const clubs = ['driver', 'iron', 'wedge'].filter((c) => opt.clubs[c].ok);
   const toPin = Math.atan2(h.pin.x - ball.x, h.pin.y - ball.y), ap = C.aimPoint(h, ball, 250), toAp = Math.atan2(ap.x - ball.x, ap.y - ball.y);
   const bases = Math.abs(toPin - toAp) > 0.05 ? [toPin, toAp] : [toPin];
   let best = null;
+  const cands = [];
   const here = pathRemaining(h, ball);
   const score = (club, a, p) => {
     const f = flyFast(h, ball, club, a, p, opt.clubs[club].max, windScale);
@@ -54,6 +55,7 @@ function planSwing(h, ball, opt, windScale) {
       else cost = pathRemaining(h, { x: ex, y: ey }) + (et === T.ROUGH ? 12 : et === T.SAND ? 28 : 0);
       for (let q = 0; q < 6; q++) { const an = q * 1.047; if (C.terrainAt(h, f.x + Math.cos(an) * 9, f.y + Math.sin(an) * 9) === T.WATER) cost += 6; }
     }
+    cands.push({ club, a, p, cost });
     if (!best || cost < best.cost) best = { club, a, p, cost };
   };
   for (const club of clubs) for (const b of bases) for (let da = -0.5; da <= 0.5001; da += 0.0625) for (let p = 0.22; p <= 1.0001; p += 0.078) score(club, b + da, p);
@@ -61,7 +63,17 @@ function planSwing(h, ball, opt, windScale) {
   if (!best) return { club: opt.clubs.wedge.ok ? 'wedge' : 'iron', a: toPin + Math.PI, p: 0.3 };
   const c = best;
   for (let da = -0.05; da <= 0.0501; da += 0.0125) for (let dp = -0.06; dp <= 0.0601; dp += 0.02) score(c.club, c.a + da, Math.max(0.08, Math.min(1, c.p + dp)));
-  return best;
+  /* a player who has watched a ball trickle into a pond: the best few are checked with the real ball (slopes included, wind as
+     this player reads it) only to throw out the ones that end wet or in the trees. Reading the green stays approximate. */
+  const hh = Object.assign({}, h, { wind: Object.assign({}, h.wind, { mph: h.wind.mph * windScale }) });
+  cands.sort((x, y) => x.cost - y.cost);
+  let pick = null;
+  const dry = (q, a, p) => { const r = C.runShot(hh, ball, q.club, a, Math.max(0.05, Math.min(1, p)), true); return r.kind !== 'water' && !r.tree; };
+  /* after a ball in the water from this spot, leave room for a miss as well */
+  const m = wet ? 0.03 * wet : 0, am = wet ? 0.025 * wet : 0;
+  for (const q of cands.slice(0, wet ? 40 : 12)) if (dry(q, q.a, q.p) && (!wet || (dry(q, q.a, q.p * (1 + m)) && dry(q, q.a, q.p * (1 - m)) && dry(q, q.a + am, q.p) && dry(q, q.a - am, q.p)))) { pick = q; break; }
+  if (!pick) for (const q of cands.slice(wet ? 40 : 12, 400)) if (dry(q, q.a, q.p)) { pick = q; break; } // nothing good stays dry: find the best that does
+  return pick || best;
 }
 function planPutt(h, ball, slopeScale) {
   const hh = Object.assign({}, h, { ter: Object.assign({}, h.ter, { gx: h.ter.gx * slopeScale, gy: h.ter.gy * slopeScale }) });
@@ -74,21 +86,23 @@ function planPutt(h, ball, slopeScale) {
   return best;
 }
 function playHole(h, skill, rng) {
-  let ball = { x: h.tee.x, y: h.tee.y }, strokes = 0, secs = 0, trail = '', clubs = '';
+  let ball = { x: h.tee.x, y: h.tee.y }, strokes = 0, secs = 0, trail = '', clubs = '', fullDrivers = 0, retee = false, wetHere = 0;
   while (true) {
     const opt = C.clubOptions(h, ball), putt = opt.lie === T.GREEN;
-    const plan = putt ? Object.assign(planPutt(h, ball, skill.read), { club: 'putter' }) : planSwing(h, ball, opt, skill.wind);
+    const plan = putt ? Object.assign(planPutt(h, ball, skill.read), { club: 'putter' }) : planSwing(h, ball, opt, skill.wind, wetHere);
     let a = plan.a + gauss(rng) * (putt ? skill.pang : skill.ang) * Math.PI / 180;
     const sw = opt.clubs[plan.club].sway; if (sw) a += (rng() * 2 - 1) * sw * skill.sway * Math.PI / 180;
     const p = Math.max(0.05, Math.min(1, plan.p * (1 + gauss(rng) * skill.pow)));
+    if (plan.club === 'driver' && p >= 0.95 && !retee) fullDrivers++;
     const s = C.createShot(h, ball, plan.club, a, p, true);
     let n = 0; while (!s.done && n < 8000) { C.stepShot(h, s); n++; }
     secs += n * C.PHYS.DT; strokes++; clubs += plan.club[0];
     const r = s.result;
-    if (r.kind === 'holed') return { score: strokes, secs, trail: trail + 'H', shots: strokes, clubs };
+    if (r.kind === 'holed') return { score: strokes, secs, trail: trail + 'H', shots: strokes, clubs, fullDrivers };
+    retee = r.kind === 'water'; wetHere = retee ? wetHere + 1 : 0;
     if (r.kind === 'water') { strokes++; trail += 'W'; } else { ball = { x: r.x, y: r.y }; trail += r.tree ? 'T' : 'RFFFGSW'[r.lie]; }
-    if (C.blockedAt(h, ball.x, ball.y)) return { score: 99, secs, trail: trail + '!STUCK', shots: strokes, clubs };
-    if (strokes >= h.par + 3) return { score: h.par + 4, secs, trail: trail + 'X', shots: strokes, pickup: true, clubs };
+    if (C.blockedAt(h, ball.x, ball.y)) return { score: 99, secs, trail: trail + '!STUCK', shots: strokes, clubs, fullDrivers };
+    if (strokes >= h.par + 3) return { score: h.par + 4, secs, trail: trail + 'X', shots: strokes, pickup: true, clubs, fullDrivers };
   }
 }
 const SKILLS = {
@@ -96,9 +110,11 @@ const SKILLS = {
   regular: { ang: 1.1, pang: 1.0, pow: 0.03, wind: 0.7, read: 0.7, sway: 0.45 },
   newbie: { ang: 2.2, pang: 2.0, pow: 0.06, wind: 0.2, read: 0.3, sway: 0.9 }
 };
+module.exports = { playHole, planSwing, planPutt, SKILLS, pathRemaining, flyFast };
+if (require.main === module) {
 const DAYS = +(process.argv[2] || 14);
 const start = new Date(2026, 10, 10);
-const stats = {}; for (const k of Object.keys(SKILLS)) stats[k] = { rounds: [], byPar: { 3: [], 4: [], 5: [] }, names: {}, pick: 0, secs: [], swings: [], clubs: {} };
+const stats = {}; for (const k of Object.keys(SKILLS)) stats[k] = { rounds: [], byPar: { 3: [], 4: [], 5: [] }, names: {}, pick: 0, eagles5: 0, holes5: 0, maxFullDrivers: 0, stuck: 0, secs: [], swings: [], clubs: {} };
 const flagged = []; let genFail = 0, drops = [], grads = [];
 const t0 = Date.now();
 for (let d = 0; d < DAYS; d++) {
@@ -122,6 +138,9 @@ for (let d = 0; d < DAYS; d++) {
         const nm = C.scoreName(h.par, r.score); stats[name].names[nm] = (stats[name].names[nm] || 0) + 1;
         for (const c of r.clubs) stats[name].clubs[c] = (stats[name].clubs[c] || 0) + 1;
         if (r.pickup) stats[name].pick++;
+        if (h.par === 5) { stats[name].holes5++; if (r.score <= 3) stats[name].eagles5++; }
+        stats[name].maxFullDrivers = Math.max(stats[name].maxFullDrivers, r.fullDrivers);
+        if (r.score === 99) stats[name].stuck++;
         if (r.score === 99 || (name === 'expert' && r.score >= h.par + 2)) flagged.push(key + ' hole ' + (i + 1) + ' par ' + h.par + ' ' + name + ' took ' + r.score + ' ' + r.trail);
       });
       stats[name].rounds.push(total - round.par); stats[name].secs.push(secs); stats[name].swings.push(swings);
@@ -130,13 +149,16 @@ for (let d = 0; d < DAYS; d++) {
 }
 const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
 const hist = (a) => { const m = {}; a.forEach((v) => (m[v] = (m[v] || 0) + 1)); return Object.keys(m).map(Number).sort((x, y) => x - y).map((k) => C.toPar(k) + ':' + m[k]).join('  '); };
-console.log('days', DAYS, 'invalid holes', genFail, 'elapsed', ((Date.now() - t0) / 1000).toFixed(1) + 's');
+const gms = []; for (let d = 0; d < Math.min(DAYS, 10); d++) { const k = 'gen-' + d, t1 = Date.now(); C.makeRound(k); gms.push(Date.now() - t1); }
+console.log('days', DAYS, 'invalid holes', genFail, 'gen ms per round max', Math.max(...gms), 'gen failures', JSON.stringify(C._gen.fail), 'elapsed', ((Date.now() - t0) / 1000).toFixed(1) + 's');
 console.log('tee-to-cup drop (ft): min', Math.min(...drops), 'max', Math.max(...drops), 'mean', mean(drops).toFixed(1), '| steepest fairway grade: mean', (mean(grads) * 100).toFixed(1) + '%', 'max', (Math.max(...grads) * 100).toFixed(1) + '%');
 for (const [name, s] of Object.entries(stats)) {
   console.log('\n== ' + name + ' ==');
   console.log(' round to par: mean', mean(s.rounds).toFixed(2), '|', hist(s.rounds));
   console.log(' by par: 3 ->', mean(s.byPar[3]).toFixed(2), ' 4 ->', mean(s.byPar[4]).toFixed(2), ' 5 ->', mean(s.byPar[5]).toFixed(2));
+  console.log(' par-5 eagles', s.eagles5 + '/' + s.holes5, '(' + ((100 * s.eagles5) / s.holes5).toFixed(1) + '%)', '| full-power drivers on one hole, max', s.maxFullDrivers, '| stuck', s.stuck);
   console.log(' results:', JSON.stringify(s.names), 'pickups', s.pick, 'clubs', JSON.stringify(s.clubs));
   console.log(' ball-in-motion secs per round: mean', mean(s.secs).toFixed(1), 'max', Math.max(...s.secs).toFixed(1), '| swings per round', mean(s.swings).toFixed(1));
 }
 if (flagged.length) { console.log('\nFLAGGED (' + flagged.length + ')'); flagged.slice(0, 40).forEach((f) => console.log(' ', f)); }
+}

@@ -1,5 +1,5 @@
 /* Plays a round of the 3D version through real pointer input and saves screenshots. */
-const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+const { chromium } = (function () { try { return require('/opt/npm-tools/node_modules/playwright'); } catch (e) { return require('playwright'); } })();
 const path = require('path');
 const out = path.join(__dirname, '..', 'shots');
 require('fs').mkdirSync(out, { recursive: true });

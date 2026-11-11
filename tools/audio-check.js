@@ -8,7 +8,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+const { chromium } = (function () { try { return require('/opt/npm-tools/node_modules/playwright'); } catch (e) { return require('playwright'); } })();
 const file = path.resolve(process.argv[2] || path.join(__dirname, '..', 'fx', 'audio.js'));
 
 (async () => {
