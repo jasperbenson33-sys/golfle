@@ -20,6 +20,7 @@ The live 3D page now has the course redesign (step 1, done 11 Nov) with no effec
 5. **Never a hole where the driver is used at full capacity more than once.** Decision: driver is tee-only.
 6. **Harder holes come from obstacles and hilliness, never from sheer length.**
 7. Name and wind are fine for now.
+9. Par 5s stay about 490-525 yd so they always take three shots (decided 11 Nov). Do not shorten them without asking.
 8. Goal now: "absolutely gorgeous and seamless", effects like lens flare, water ripples, swaying grass and trees, wind carrying fall leaves. He asked for a team of agents.
 
 ## Layout
